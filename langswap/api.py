@@ -127,10 +127,10 @@ def process_translation(input, progress_callback=None):
     with timed("merge"):
         video_translation = pipeline._merge(pipeline.config.dubbing_algo)
 
-    # Generate SRT files - updated to use the method from the pipeline
+    # Generate VTT files
     update_progress("95% Generating subtitle files")
-    with timed("srt"):
-        source_srt, translated_srt = pipeline.generate_srt_files()
+    with timed("vtt"):
+        source_vtt, translated_vtt = pipeline.generate_vtt_files()
 
     # Final progress update
     total = sum(stage_times.values())
@@ -140,11 +140,11 @@ def process_translation(input, progress_callback=None):
 
     result_video = video_translation.processed_video
     
-    # Return URLs for both the video and the SRT files
+    # Return URLs for both the video and the VTT files
     return {
         's3_result_video_url': f'{result_video.s3_url}',
-        's3_source_transcript_url': f'{source_srt.s3_url}',
-        's3_translated_transcript_url': f'{translated_srt.s3_url}'
+        's3_source_transcript_url': f'{source_vtt.s3_url}',
+        's3_translated_transcript_url': f'{translated_vtt.s3_url}'
     }
 
 def process_update_translation(input, progress_callback=None):
@@ -180,7 +180,7 @@ def process_update_translation(input, progress_callback=None):
     
     pipeline = VideoTranslationPipeline(config=config, file_repository=repo)
     # Second progress update - Transcription
-    update_progress("30% Loading cache")
+    update_progress("60% Loading cache")
     video_translation = pipeline.translate_video()
 
   
@@ -191,16 +191,16 @@ def process_update_translation(input, progress_callback=None):
     update_progress("90% Apply changes")
     update_progress("95% Generating subtitle files")
     pipeline.video_translation = video_translation
-    source_srt, translated_srt = pipeline.generate_srt_files()
+    source_vtt, translated_vtt = pipeline.generate_vtt_files()
     
     result_video = video_translation.processed_video
     
     
-    # Return URLs for both the video and the SRT files
+    # Return URLs for both the video and the VTT files
     return {
         's3_result_video_url': f'{result_video.s3_url}',
-        's3_source_transcript_url': f'{source_srt.s3_url}',
-        's3_translated_transcript_url': f'{translated_srt.s3_url}'
+        's3_source_transcript_url': f'{source_vtt.s3_url}',
+        's3_translated_transcript_url': f'{translated_vtt.s3_url}'
     }
 
 

@@ -74,9 +74,11 @@ class OpenAITranslationClient:
         source = _to_lang_name(source_language)
         target = _to_lang_name(target_language)
         system_prompt = (
-            f"You are a professional translator. "
+            f"You are a professional dubbing translator. "
             f"Translate the user's text from {source} to {target}. "
-            f"Return only the translation, no explanations or additional text."
+            f"Output ONLY the {target} translation — no notes, explanations, "
+            f"quotes, or alternatives. Preserve the speaker's tone and emotion. "
+            f"Make it sound natural and idiomatic in {target} for spoken dubbing."
         )
 
         translations: list[str] = []

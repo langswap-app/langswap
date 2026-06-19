@@ -172,48 +172,46 @@ class VideoTranslationPipeline:
 
         return self.video_translation
 
-    def generate_srt_files(self):
+    def generate_vtt_files(self):
         """
-        Generate SRT files for both the original transcript and the translation.
+        Generate VTT files for both the original transcript and the translation.
         Returns the RemoteFile objects for both files.
         """
-        # Function to convert timestamp to SRT format (HH:MM:SS,mmm)
+        # Function to convert timestamp to VTT format (HH:MM:SS.mmm)
         def format_time(seconds):
             hours = int(seconds // 3600)
             minutes = int((seconds % 3600) // 60)
             seconds = seconds % 60
             milliseconds = int((seconds - int(seconds)) * 1000)
-            return f"{hours:02}:{minutes:02}:{int(seconds):02},{milliseconds:03}"
+            return f"{hours:02}:{minutes:02}:{int(seconds):02}.{milliseconds:03}"
         
-        # Generate SRT for original transcript
-        source_srt_content = ""
-        for i, segment in enumerate(self.video_translation.recognized_texts):
-            source_srt_content += f"{i+1}\n"
-            source_srt_content += f"{format_time(segment.start)} --> {format_time(segment.end)}\n"
-            source_srt_content += f"{segment.text}\n\n"
+        # Generate VTT for original transcript
+        source_vtt_content = "WEBVTT\n\n"
+        for segment in self.video_translation.recognized_texts:
+            source_vtt_content += f"{format_time(segment.start)} --> {format_time(segment.end)}\n"
+            source_vtt_content += f"<v {segment.speaker}>{segment.text}</v>\n\n"
         
-        # Generate SRT for translated transcript
-        translated_srt_content = ""
-        for i, segment in enumerate(self.video_translation.translated_texts):
-            translated_srt_content += f"{i+1}\n"
-            translated_srt_content += f"{format_time(segment.start)} --> {format_time(segment.end)}\n"
-            translated_srt_content += f"{segment.translation}\n\n"
+        # Generate VTT for translated transcript
+        translated_vtt_content = "WEBVTT\n\n"
+        for segment in self.video_translation.translated_texts:
+            translated_vtt_content += f"{format_time(segment.start)} --> {format_time(segment.end)}\n"
+            translated_vtt_content += f"<v {segment.speaker}>{segment.translation}</v>\n\n"
         
-        # Save source SRT file
-        source_srt_file = self._file_repository.get_file("source_transcript.srt")
-        with open(source_srt_file.file_path, 'w', encoding='utf-8') as f:
-            f.write(source_srt_content)
+        # Save source VTT file
+        source_vtt_file = self._file_repository.get_file("source_transcript.vtt")
+        with open(source_vtt_file.file_path, 'w', encoding='utf-8') as f:
+            f.write(source_vtt_content)
         
-        # Save translated SRT file
-        translated_srt_file = self._file_repository.get_file("translated_transcript.srt")
-        with open(translated_srt_file.file_path, 'w', encoding='utf-8') as f:
-            f.write(translated_srt_content)
+        # Save translated VTT file
+        translated_vtt_file = self._file_repository.get_file("translated_transcript.vtt")
+        with open(translated_vtt_file.file_path, 'w', encoding='utf-8') as f:
+            f.write(translated_vtt_content)
         
         # Upload the files to S3
-        source_srt_file = self._file_repository.save_file(source_srt_file)
-        translated_srt_file = self._file_repository.save_file(translated_srt_file)
+        source_vtt_file = self._file_repository.save_file(source_vtt_file)
+        translated_vtt_file = self._file_repository.save_file(translated_vtt_file)
         
-        return source_srt_file, translated_srt_file
+        return source_vtt_file, translated_vtt_file
 
 
 class ChangeManager:
