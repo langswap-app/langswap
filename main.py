@@ -109,7 +109,7 @@ def run_local(
         ("tts", pipeline._generate_speech),
         ("merge", lambda: setattr(pipeline, "video_translation",
                                   pipeline._merge(pipeline.config.dubbing_algo))),
-        ("srt", pipeline.generate_srt_files),
+        ("vtt", pipeline.generate_vtt_files),
     ]
 
     for name, fn in stages:

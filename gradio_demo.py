@@ -88,7 +88,7 @@ def translate_video(
 ):
     """Gradio callback: run the full pipeline and return outputs.
 
-    Returns a tuple (result_video, source_srt, translated_srt, status_text).
+    Returns a tuple (result_video, source_vtt, translated_vtt, status_text).
     Any intermediate failure is caught and reported via the status field so
     the UI does not just crash with a stack trace.
     """
@@ -144,7 +144,7 @@ def translate_video(
         pipeline.video_translation = video_translation
 
         progress(0.95, desc="Writing subtitles")
-        source_srt, translated_srt = pipeline.generate_srt_files()
+        source_vtt, translated_vtt = pipeline.generate_vtt_files()
 
         progress(1.0, desc="Done")
 
@@ -154,7 +154,7 @@ def translate_video(
             f"Output dir: {repo.directory}\n"
             f"Video: {result_video_path}"
         )
-        return result_video_path, source_srt.file_path, translated_srt.file_path, status
+        return result_video_path, source_vtt.file_path, translated_vtt.file_path, status
 
     except Exception as e:  # noqa: BLE001 — display to user, do not crash UI
         tb = traceback.format_exc()
@@ -210,8 +210,8 @@ def build_ui() -> gr.Blocks:
 
             with gr.Column(scale=1):
                 video_out = gr.Video(label="Translated video")
-                source_srt_out = gr.File(label="Source transcript (.srt)")
-                target_srt_out = gr.File(label="Translated transcript (.srt)")
+                source_srt_out = gr.File(label="Source transcript (.vtt)")
+                target_srt_out = gr.File(label="Translated transcript (.vtt)")
                 status_out = gr.Textbox(label="Status", lines=10)
 
         run_btn.click(
