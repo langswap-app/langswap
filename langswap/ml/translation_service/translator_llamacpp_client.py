@@ -161,8 +161,10 @@ class LlamaCppTranslationClient:
         system = (
             f"You are a professional dubbing translator. Translate the line from "
             f"{src} to {tgt}. Output ONLY the {tgt} translation — no notes, "
-            f"explanations, quotes, or alternatives. Keep it natural for spoken "
-            f"dubbing and close in spoken length to the original."
+            f"explanations, quotes, or alternatives. Preserve the speaker's tone, "
+            f"register, and emotion. Ensure the translation sounds natural and "
+            f"idiomatic in {tgt} rather than a literal word-for-word rendering. "
+            f"Keep the spoken length close to the original for dubbing sync."
         )
         target_len = _spoken_length(text)
 
