@@ -109,7 +109,7 @@ def run_local(
         ("tts", pipeline._generate_speech),
         ("merge", lambda: setattr(pipeline, "video_translation",
                                   pipeline._merge(pipeline.config.dubbing_algo))),
-        ("srt", pipeline.generate_srt_files),
+        ("vtt", pipeline.generate_vtt_files),
     ]
 
     for name, fn in stages:
@@ -153,7 +153,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_local.add_argument("--with-diarization", action="store_true",
                          help="enable speaker diarization (off by default for speed)")
     p_local.add_argument("--stop-after", default=None,
-                         choices=["asr", "translation", "tts", "merge", "srt"])
+                         choices=["asr", "translation", "tts", "merge", "vtt"])
 
     # runpod -------------------------------------------------------------
     p_runpod = sub.add_parser("runpod", help="Run the S3/RunPod pipeline from a JSON job file.")

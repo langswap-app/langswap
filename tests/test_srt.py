@@ -4,6 +4,7 @@ Guarded for the full GPU/api venv: importing the pipeline pulls in pyrubberband
 and silero_vad at module top, which are absent in the lean test env, so this
 skips cleanly here and runs in production.
 """
+import re
 import pytest
 
 pytest.importorskip("pyrubberband")
@@ -17,10 +18,10 @@ from langswap.pipeline_models.models import (  # noqa: E402
     TranslatedTextedSegment,
 )
 
-SRT_TIME = r"\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}"
+VTT_TIME = r"\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}"
 
 
-def test_generate_srt_files(tmp_path):
+def test_generate_vtt_files(tmp_path):
     repo = LocalOnlyFileRepository("job1", str(tmp_path))
 
     recognized = [
@@ -46,20 +47,25 @@ def test_generate_srt_files(tmp_path):
         translated_texts=translated,
     )
 
-    source_srt, translated_srt = pipeline.generate_srt_files()
+    source_vtt, translated_vtt = pipeline.generate_vtt_files()
 
-    import re
+    source_text = open(source_vtt.file_path, encoding="utf-8").read()
+    translated_text = open(translated_vtt.file_path, encoding="utf-8").read()
 
-    source_text = open(source_srt.file_path, encoding="utf-8").read()
-    translated_text = open(translated_srt.file_path, encoding="utf-8").read()
+    assert source_vtt.file_path.endswith(".vtt")
+    assert translated_vtt.file_path.endswith(".vtt")
 
-    # Correctly formatted SRT timestamps.
-    assert re.search(SRT_TIME, source_text)
-    assert "00:00:00,000 --> 00:00:01,500" in source_text
-    assert "00:00:02,000 --> 00:00:03,250" in source_text
+    assert source_text.startswith("WEBVTT\n\n")
+    assert translated_text.startswith("WEBVTT\n\n")
 
-    # Source SRT carries the recognized text, translated SRT the translation.
-    assert "Hello world" in source_text
-    assert "How are you" in source_text
-    assert "Privet mir" in translated_text
-    assert "Kak dela" in translated_text
+    assert re.search(VTT_TIME, source_text)
+    assert "00:00:00.000 --> 00:00:01.500" in source_text
+    assert "00:00:02.000 --> 00:00:03.250" in source_text
+
+    assert "<v SPEAKER_00>Hello world</v>" in source_text
+    assert "<v SPEAKER_00>How are you</v>" in source_text
+    assert "<v SPEAKER_00>Privet mir</v>" in translated_text
+    assert "<v SPEAKER_00>Kak dela</v>" in translated_text
+
+    assert not any(line.strip().isdigit() for line in source_text.splitlines())
+    assert not any(line.strip().isdigit() for line in translated_text.splitlines())
