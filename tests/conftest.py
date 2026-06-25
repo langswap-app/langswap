@@ -163,4 +163,37 @@ def sample_segments():
         create_mock_segment(0.0, 1.0, "First segment", "SPEAKER_00"),
         create_mock_segment(1.0, 2.5, "Second segment", "SPEAKER_01"),
         create_mock_segment(2.5, 4.0, "Third segment", "SPEAKER_00"),
-    ] 
+    ]
+
+
+@pytest.fixture
+def sample_video_path() -> str:
+    """Path to a small synthetic test video in tests/fixtures/media/.
+
+    If the file hasn't been generated yet, creates it on the fly with ffmpeg.
+    """
+    media_dir = Path(__file__).parent / "fixtures" / "media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    video = media_dir / "test_video.mp4"
+    if not video.exists():
+        import subprocess
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-f", "lavfi",
+                "-i", "testsrc=duration=3:size=320x180:rate=12",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=3",
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+                "-c:a", "aac", "-shortest",
+                str(video),
+            ],
+            capture_output=True, timeout=20,
+        )
+    return str(video)
+
+
+@pytest.fixture
+def sample_video_url() -> str:
+    """Public S3 URL of a test video for full-pipeline integration tests."""
+    return "https://storage.yandexcloud.net/langswap-public/ru_source/1.mp4" 
