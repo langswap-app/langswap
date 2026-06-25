@@ -18,6 +18,10 @@ model_bundle/
 *.mkv
 .gradio/
 
+# Allow small example media committed to the test fixtures directory
+!tests/fixtures/media/
+!tests/fixtures/media/*
+
 # Local datasets / artifacts / vendor drops
 assets/
 notebooks/
