@@ -215,6 +215,57 @@ class VideoTranslationPipeline:
         
         return source_srt_file, translated_srt_file
 
+    def generate_vtt_files(self):
+        """
+        Generate WebVTT files for both the original transcript and the translation.
+        VTT supports speaker labels via <v SpeakerName> tags.
+        Returns the RemoteFile objects for both files.
+        """
+        def format_time_vtt(seconds):
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            seconds = seconds % 60
+            milliseconds = int((seconds - int(seconds)) * 1000)
+            return f"{hours:02}:{minutes:02}:{int(seconds):02}.{milliseconds:03}"
+
+        def format_segment_vtt(segment_text, speaker):
+            # Use <v SpeakerName> tags when speaker info is available
+            if speaker and speaker.strip():
+                return f"<v {speaker}>{segment_text}"
+            return segment_text
+
+        # Generate VTT for original transcript
+        source_vtt_lines = ["WEBVTT", ""]
+        for segment in self.video_translation.recognized_texts:
+            source_vtt_lines.append(f"{format_time_vtt(segment.start)} --> {format_time_vtt(segment.end)}")
+            source_vtt_lines.append(format_segment_vtt(segment.text, segment.speaker))
+            source_vtt_lines.append("")
+        source_vtt_content = "\n".join(source_vtt_lines)
+
+        # Generate VTT for translated transcript
+        translated_vtt_lines = ["WEBVTT", ""]
+        for segment in self.video_translation.translated_texts:
+            translated_vtt_lines.append(f"{format_time_vtt(segment.start)} --> {format_time_vtt(segment.end)}")
+            translated_vtt_lines.append(format_segment_vtt(segment.translation, segment.speaker))
+            translated_vtt_lines.append("")
+        translated_vtt_content = "\n".join(translated_vtt_lines)
+
+        # Save source VTT file
+        source_vtt_file = self._file_repository.get_file("source_transcript.vtt")
+        with open(source_vtt_file.file_path, 'w', encoding='utf-8') as f:
+            f.write(source_vtt_content)
+
+        # Save translated VTT file
+        translated_vtt_file = self._file_repository.get_file("translated_transcript.vtt")
+        with open(translated_vtt_file.file_path, 'w', encoding='utf-8') as f:
+            f.write(translated_vtt_content)
+
+        # Upload the files to S3
+        source_vtt_file = self._file_repository.save_file(source_vtt_file)
+        translated_vtt_file = self._file_repository.save_file(translated_vtt_file)
+
+        return source_vtt_file, translated_vtt_file
+
 
 class ChangeManager:
     def __init__(self, video_translation_pipeline: VideoTranslationPipeline, video_translation: VideoTranslation):

@@ -93,12 +93,12 @@ def translate_video(
     the UI does not just crash with a stack trace.
     """
     if not video_file:
-        return None, None, None, "No video file uploaded."
+        return None, None, None, None, None, "No video file uploaded."
 
     try:
         video_path = Path(video_file).expanduser().resolve()
         if not video_path.exists():
-            return None, None, None, f"File not found: {video_path}"
+            return None, None, None, None, None, f"File not found: {video_path}"
 
         public_id = _public_id(str(video_path))
         repo = LocalOnlyFileRepository(public_id, BASE_DIR)
@@ -146,6 +146,9 @@ def translate_video(
         progress(0.95, desc="Writing subtitles")
         source_srt, translated_srt = pipeline.generate_srt_files()
 
+        progress(0.97, desc="Writing VTT subtitles")
+        source_vtt, translated_vtt = pipeline.generate_vtt_files()
+
         progress(1.0, desc="Done")
 
         result_video_path = video_translation.processed_video.file_path
@@ -154,12 +157,19 @@ def translate_video(
             f"Output dir: {repo.directory}\n"
             f"Video: {result_video_path}"
         )
-        return result_video_path, source_srt.file_path, translated_srt.file_path, status
+        return (
+            result_video_path,
+            source_srt.file_path,
+            translated_srt.file_path,
+            source_vtt.file_path,
+            translated_vtt.file_path,
+            status,
+        )
 
     except Exception as e:  # noqa: BLE001 — display to user, do not crash UI
         tb = traceback.format_exc()
         logger.exception("Pipeline failure")
-        return None, None, None, f"Pipeline failed: {e}\n\n{tb}"
+        return None, None, None, None, None, f"Pipeline failed: {e}\n\n{tb}"
 
 
 # ── Translation editor (Edit tab) ────────────────────────────────────────────
@@ -302,7 +312,7 @@ def editor_add_segment(state, edits):
 def editor_apply_edits(session: "editor.EditorSession | None", state, edits):
     """Fold pending edits in, reconcile add/delete/reorder/edits and re-dub."""
     if session is None:
-        return None, state, edits, gr.update(), None, None, None, "Load a job first."
+        return None, state, edits, gr.update(), None, None, None, None, None, "Load a job first."
 
     merged = _merge_edits(state, edits)
 
@@ -317,6 +327,10 @@ def editor_apply_edits(session: "editor.EditorSession | None", state, edits):
             if os.path.exists(os.path.join(session.job_dir, "source_transcript.srt")) else None,
             os.path.join(session.job_dir, "translated_transcript.srt")
             if os.path.exists(os.path.join(session.job_dir, "translated_transcript.srt")) else None,
+            os.path.join(session.job_dir, "source_transcript.vtt")
+            if os.path.exists(os.path.join(session.job_dir, "source_transcript.vtt")) else None,
+            os.path.join(session.job_dir, "translated_transcript.vtt")
+            if os.path.exists(os.path.join(session.job_dir, "translated_transcript.vtt")) else None,
             status,
         )
 
@@ -410,6 +424,8 @@ def build_editor_tab() -> None:
                 dubbed_audio = gr.Audio(label="Current dubbed segment", type="filepath")
             source_srt_dl = gr.File(label="Source transcript (.srt)")
             target_srt_dl = gr.File(label="Translated transcript (.srt)")
+            source_vtt_dl = gr.File(label="Source transcript (.vtt)")
+            target_vtt_dl = gr.File(label="Translated transcript (.vtt)")
     editor_status = gr.Textbox(label="Status", lines=4)
 
     refresh_btn.click(editor_refresh_jobs, inputs=[base_dir_in], outputs=[job_dd])
@@ -429,7 +445,7 @@ def build_editor_tab() -> None:
         inputs=[session_state, seg_state, edits_state],
         outputs=[
             session_state, seg_state, edits_state, segment_dd, result_video,
-            source_srt_dl, target_srt_dl, editor_status,
+            source_srt_dl, target_srt_dl, source_vtt_dl, target_vtt_dl, editor_status,
         ],
     )
 
@@ -478,6 +494,8 @@ def build_translate_tab() -> None:
             video_out = gr.Video(label="Translated video")
             source_srt_out = gr.File(label="Source transcript (.srt)")
             target_srt_out = gr.File(label="Translated transcript (.srt)")
+            source_vtt_out = gr.File(label="Source transcript (.vtt)")
+            target_vtt_out = gr.File(label="Translated transcript (.vtt)")
             status_out = gr.Textbox(label="Status", lines=10)
 
     run_btn.click(
@@ -487,7 +505,7 @@ def build_translate_tab() -> None:
             translation_backend, dubbing_algo, device, skip_diarization,
             eleven_token,
         ],
-        outputs=[video_out, source_srt_out, target_srt_out, status_out],
+        outputs=[video_out, source_srt_out, target_srt_out, source_vtt_out, target_vtt_out, status_out],
     )
 
     gr.Markdown(

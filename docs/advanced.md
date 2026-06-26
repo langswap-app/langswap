@@ -101,9 +101,9 @@ Useful flags:
 | `--tts`               | `omnivoice` | `omnivoice` / `elevenlabs`                                 |
 | `--dubbing`           | `speedup`   | `speedup` / `stretch_whole` / `pause_based`                |
 | `--with-diarization`  | off         | enable speaker diarization (needs pyannote weights + token) |
-| `--stop-after`        | —           | stop after `asr` / `translation` / `tts` / `merge` / `srt`  |
+| `--stop-after`        | —           | stop after `asr` / `translation` / `tts` / `merge` / `srt` / `vtt`  |
 
-Output: `data/<id>/resulted_video.mp4`, plus `source_transcript.srt` and `translated_transcript.srt`.
+Output: `data/<id>/resulted_video.mp4`, plus `source_transcript.srt`, `translated_transcript.srt`, `source_transcript.vtt`, and `translated_transcript.vtt`.
 
 ---
 
